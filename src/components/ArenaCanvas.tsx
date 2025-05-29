@@ -29,8 +29,8 @@ export const ArenaCanvas: React.FC<ArenaCanvasProps> = ({
   const [showGrid, setShowGrid] = useState(true);
   const animationFrameRef = useRef<number>();
 
-  const CANVAS_WIDTH = 800;
-  const CANVAS_HEIGHT = 600;
+  const CANVAS_WIDTH = 700;
+  const CANVAS_HEIGHT = 500;
   const ROBOT_SIZE = 30;
 
   // Initialize canvas
@@ -52,9 +52,9 @@ export const ArenaCanvas: React.FC<ArenaCanvasProps> = ({
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(100, 300);
-    ctx.quadraticCurveTo(400, 100, 700, 300);
-    ctx.quadraticCurveTo(400, 500, 100, 300);
+    ctx.moveTo(100, 250);
+    ctx.quadraticCurveTo(350, 100, 600, 250);
+    ctx.quadraticCurveTo(350, 400, 100, 250);
     ctx.stroke();
 
     // Store initial track data
@@ -113,11 +113,15 @@ export const ArenaCanvas: React.FC<ArenaCanvasProps> = ({
     const speed = (leftMotor + rightMotor) / 2 / 255 * 2;
     const turnRate = (rightMotor - leftMotor) / 255 * 3;
 
-    setRobotPosition(prev => ({
-      x: Math.max(ROBOT_SIZE, Math.min(CANVAS_WIDTH - ROBOT_SIZE, prev.x + speed * Math.cos(prev.angle * Math.PI / 180))),
-      y: Math.max(ROBOT_SIZE, Math.min(CANVAS_HEIGHT - ROBOT_SIZE, prev.y + speed * Math.sin(prev.angle * Math.PI / 180))),
-      angle: (prev.angle + turnRate) % 360
-    }));
+    const newX = Math.max(ROBOT_SIZE, Math.min(CANVAS_WIDTH - ROBOT_SIZE, robotPosition.x + speed * Math.cos(robotPosition.angle * Math.PI / 180)));
+    const newY = Math.max(ROBOT_SIZE, Math.min(CANVAS_HEIGHT - ROBOT_SIZE, robotPosition.y + speed * Math.sin(robotPosition.angle * Math.PI / 180)));
+    const newAngle = (robotPosition.angle + turnRate) % 360;
+
+    setRobotPosition({
+      x: newX,
+      y: newY,
+      angle: newAngle
+    });
 
     animationFrameRef.current = requestAnimationFrame(simulate);
   }, [isRunning, robotPosition, robotConfig, setSensorData, setRobotPosition]);
@@ -198,6 +202,22 @@ export const ArenaCanvas: React.FC<ArenaCanvasProps> = ({
 
     requestAnimationFrame(render);
   }, [robotPosition, robotConfig, sensorData, trackData, showGrid]);
+
+  useEffect(() => {
+    if (isRunning) {
+      animationFrameRef.current = requestAnimationFrame(simulate);
+    } else {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    }
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isRunning, simulate]);
 
   useEffect(() => {
     render();
@@ -297,11 +317,12 @@ export const ArenaCanvas: React.FC<ArenaCanvasProps> = ({
         </div>
       </div>
 
-      {/* Canvas */}
-      <div className="flex-1 flex items-center justify-center bg-white rounded-lg border-2 border-slate-300">
+      {/* Canvas Container */}
+      <div className="flex-1 flex items-center justify-center bg-white rounded-lg border-2 border-slate-300 p-4 overflow-hidden">
         <canvas
           ref={canvasRef}
-          className="border border-gray-300 cursor-crosshair"
+          className="border border-gray-300 cursor-crosshair max-w-full max-h-full"
+          style={{ width: '100%', height: 'auto', maxWidth: `${CANVAS_WIDTH}px`, maxHeight: `${CANVAS_HEIGHT}px` }}
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
